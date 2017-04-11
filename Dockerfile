@@ -7,7 +7,7 @@ RUN \
 	apt-get upgrade -y && \
 	\
 	pip install requests && \
-	pip install Flask && \
+	pip install cherrypy && \
 	\
 	true
 	#apt-get clean && \
