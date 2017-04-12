@@ -6,8 +6,14 @@ config = dict();
 
 class Root(object):
 	def __init__(self):
+		cherrypy.engine.subscribe('stop', self.stop)
 		self.packtpub_controller = PacktpubController()
 		self.status = ""
+		self.timer = None
+
+	def stop(self):
+		if self.timer:
+			self.timer.cancel()
 
 	@cherrypy.expose
 	def index(self):
@@ -24,8 +30,9 @@ class Root(object):
 
 	def pull(self, args):
 		global config
-		if args[0] == True:
-			Timer(60 * 60 * 8, self.pull, [True]).start() # rerun in 8h
+		if args[0] == True: # rerun in 8h
+			self.timer = Timer(60 * 60 * 8, self.pull, [True])
+			self.timer.start()
 		status = time.strftime('%H:%M:%S', time.localtime(time.time()))
 		if self.packtpub_controller.login(config['email'], base64.b64decode(config['password'])):
 			status += "\n\tLogin as " + config['email'] + " successful."
