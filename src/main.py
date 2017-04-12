@@ -1,8 +1,8 @@
 from threading import Timer
 from packtpub import PacktpubController
-import time, base64, json, cherrypy
+import time, base64, cherrypy
 
-config = dict();
+config = None;
 
 class Root(object):
 	def __init__(self):
@@ -17,7 +17,33 @@ class Root(object):
 
 	@cherrypy.expose
 	def index(self):
-		return self.status + "\n"
+		return """<!DOCTYPE html>
+			<html>
+				<head>
+					<title>Packtpub Claimer</title>
+				</head>
+				<body>
+					<form method="post" action="/register">
+						<input type="email" name="email" placeholder="email" /><br />
+						<input type="password" name="password" placeholder="password" /><br/>
+						<input type="submit" value="Register" />
+					</form>
+					""" + self.status + """
+				</body>
+			</html>"""
+
+	@cherrypy.expose
+	def register(self, email, password):
+		global config
+		packtpub_controller = PacktpubController()
+		if packtpub_controller.login(email, password):
+			self.packtpub_controller = packtpub_controller
+			config = dict()
+			config['email'] = email
+			config['password'] = base64.b64encode(password)
+			return 'registered as ' + email + '!<br><a href="/">back</a>'
+		else:
+			return 'Login with given credentials failed.'
 
 	@cherrypy.expose
 	def clear(self):
@@ -34,23 +60,24 @@ class Root(object):
 			self.timer = Timer(60 * 60 * 8, self.pull, [True])
 			self.timer.start()
 		status = time.strftime('%H:%M:%S', time.localtime(time.time()))
-		if self.packtpub_controller.login(config['email'], base64.b64decode(config['password'])):
-			status += "\n\tLogin as " + config['email'] + " successful."
-		result = self.packtpub_controller.claim_free_ebook()
-		if result == True:
-			status += "\n\t\tNo new ebook to be claimed"
-		elif result == False:
-			status += "\n\t\tERROR@pull"
+		if config == None:
+			status += "\n\tNo user registered"
 		else:
-			status += "\n\t\tNew ebook claimed: " + result
-		if self.status != "":
-			self.status += "\n"
+			if self.packtpub_controller.login(config['email'], base64.b64decode(config['password'])):
+				status += "\n\tLogin as " + config['email'] + " successful."
+			result = self.packtpub_controller.claim_free_ebook()
+			if result == True:
+				status += "\n\t\tNo new ebook to be claimed"
+			elif result == False:
+				status += "\n\t\tERROR@pull"
+			else:
+				status += "\n\t\tNew ebook claimed: " + result
+			if self.status != "":
+				self.status += "\n"
 		self.status += status 
 		return status
 
 if __name__ == "__main__":
-	with open('config.json') as json_data:
-		config = json.load(json_data)
 	r = Root()
 	r.pull([True])
 	cherrypy.config.update({
