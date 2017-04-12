@@ -31,7 +31,7 @@ class PacktpubController(object):
 		}
 		for hidden_input in hidden_inputs:
 			payload[hidden_input.name] = hidden_input.value
-		r = self.session.post(PacktpubController.url, data=payload, headers=headers)
+		self.session.post(PacktpubController.url, data=payload, headers=headers)
 		return self.__do_get('/account', False)
 
 	def get_last_ebook_name(self):
