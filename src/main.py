@@ -17,7 +17,32 @@ class Root(object):
 
 	@cherrypy.expose
 	def index(self):
-		return self.status + "\n"
+		return """<!DOCTYPE html>
+			<html>
+				<head>
+					<title>Packtpub Claimer</title>
+				</head>
+				<body>
+					<form method="post" action="/register">
+						<input type="email" name="email" placeholder="email" /><br />
+						<input type="password" name="password" placeholder="password" /><br/>
+						<input type="submit" value="Register" />
+					</form>
+					""" + self.status + """
+				</body>
+			</html>"""
+
+	@cherrypy.expose
+	def register(self, email, password):
+		global config
+		packtpub_controller = PacktpubController()
+		if packtpub_controller.login(email, password):
+			self.packtpub_controller = packtpub_controller
+			config['email'] = email
+			config['password'] = base64.b64encode(password)
+			return 'registered as ' + email + '!<br><a href="/">back</a>'
+		else:
+			return 'Login with given credentials failed.'
 
 	@cherrypy.expose
 	def clear(self):
