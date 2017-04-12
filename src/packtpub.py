@@ -11,15 +11,19 @@ class PacktpubController(object):
 	def __init__(self):
 		self.session = requests.Session()
 
-	def __do_get(self, url_suffix = ""):
+	def __do_get(self, url_suffix = "", allow_redirects=True):
 		global headers
-		self.response = self.session.get(PacktpubController.url + url_suffix, headers=headers)
-		self.tree = html.fromstring(self.response.content)
-		return self.response.ok
+		self.response = self.session.get(PacktpubController.url + url_suffix, headers=headers, allow_redirects=allow_redirects)
+		if self.response.status_code == 200:
+			self.tree = html.fromstring(self.response.content)
+			return True
+		else:
+			return False
 
 	def login(self, email, password):
 		global headers
-		self.__do_get()
+		if not self.__do_get():
+			return False
 		hidden_inputs = self.tree.xpath('//form[@id = "packt-user-login-form"]//input[@type = "hidden"]')
 		payload = {
 			'email': email,
@@ -28,7 +32,7 @@ class PacktpubController(object):
 		for hidden_input in hidden_inputs:
 			payload[hidden_input.name] = hidden_input.value
 		r = self.session.post(PacktpubController.url, data=payload, headers=headers)
-		return r.ok
+		return self.__do_get('/account', False)
 
 	def get_last_ebook_name(self):
 		if self.__do_get('/account/my-ebooks'):
