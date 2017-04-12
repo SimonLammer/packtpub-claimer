@@ -13,6 +13,10 @@ RUN \
 	#apt-get clean && \
 	#rm -rf /var/lib/apt/lists/*
 
+RUN \
+	apt-get install -y libxml2-dev libxslt1-dev zlib1g-dev && \
+	pip install lxml
+
 VOLUME ["/handlers"]
 VOLUME ["/code"]
 ENTRYPOINT ["/bin/entrypoint.sh"]
