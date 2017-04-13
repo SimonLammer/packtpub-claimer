@@ -58,6 +58,9 @@ class Root(object):
 
 	@cherrypy.expose
 	def register(self, email, password):
+		for user in self.users:
+			if email == user['email']:
+				return "User " + email + " is already registered."
 		packtpub_controller = PacktpubController()
 		if packtpub_controller.login(email, password):
 			user = {
