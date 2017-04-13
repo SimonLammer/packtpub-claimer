@@ -3,16 +3,28 @@ from packtpub import PacktpubController
 import time, base64, cherrypy
 
 class Root(object):
-	def __init__(self):
+	def __init__(self, pull_delay):
 		cherrypy.engine.subscribe('stop', self.stop)
 		self.status = ""
 		self.timer = None
 		self.users = [];
+		self.next_pull_time = 0
+		self.pull_delay = pull_delay
+
+	def __format_time(self, time_ = None):
+		if time_ == None:
+			time_ = time.time()
+		res = ""
+		if time_ < 0:
+			res += "-"
+			time_ = -time_
+		res += time.strftime('%H:%M:%S', time.localtime(time_))	
+		return res
 
 	def __log(self, message):
 		if self.status != "" :
 			self.status += "\n"
-		self.status += time.strftime('%H:%M:%S', time.localtime(time.time()))
+		self.status += self.__format_time()
 		if self.status[-1:] != "\n" and message[0] != "\n":
 			self.status += "\n"
 		self.status += message
@@ -35,6 +47,8 @@ class Root(object):
 						<input type="submit" value="Register" />
 					</form>
 					""" + self.status + """
+					<h1>Current time: """ + self.__format_time() + """</h1>
+					<h2>Time until next pull: """ + self.__format_time(self.next_pull_time - time.time()) + """</h2>
 				</body>
 			</html>"""
 
@@ -64,7 +78,8 @@ class Root(object):
 
 	def pull(self, rerun_pull = False):
 		if rerun_pull:
-			self.timer = Timer(8, self.pull, [True])
+			self.next_pull_time = time.time() + self.pull_delay
+			self.timer = Timer(self.pull_delay, self.pull, [True])
 			self.timer.start()
 		status = ""
 		if len(self.users) == 0:
@@ -84,7 +99,7 @@ class Root(object):
 		return status
 
 if __name__ == "__main__":
-	r = Root()
+	r = Root( 8) # pull every 8h60 * 60 *
 	r.pull(True)
 	cherrypy.config.update({
 		'server.socket_host': '0.0.0.0',
