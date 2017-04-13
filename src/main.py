@@ -117,7 +117,7 @@ class Root(object):
 		return status
 
 if __name__ == "__main__":
-	r = Root( 8) # pull every 8h60 * 60 *
+	r = Root(60 * 60 * 8) # pull every 8h
 	r.pull(True)
 	cherrypy.config.update({
 		'server.socket_host': '0.0.0.0',
