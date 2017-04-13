@@ -2,14 +2,20 @@ from threading import Timer
 from packtpub import PacktpubController
 import time, base64, cherrypy
 
-config = None;
-
 class Root(object):
 	def __init__(self):
 		cherrypy.engine.subscribe('stop', self.stop)
-		self.packtpub_controller = PacktpubController()
 		self.status = ""
 		self.timer = None
+		self.users = [];
+
+	def __log(self, message):
+		if self.status != "" :
+			self.status += "\n"
+		self.status += time.strftime('%H:%M:%S', time.localtime(time.time()))
+		if self.status[-1:] != "\n" and message[0] != "\n":
+			self.status += "\n"
+		self.status += message
 
 	def stop(self):
 		if self.timer:
@@ -34,13 +40,15 @@ class Root(object):
 
 	@cherrypy.expose
 	def register(self, email, password):
-		global config
 		packtpub_controller = PacktpubController()
 		if packtpub_controller.login(email, password):
-			self.packtpub_controller = packtpub_controller
-			config = dict()
-			config['email'] = email
-			config['password'] = base64.b64encode(password)
+			user = {
+				'email': email,	
+				'password': base64.b64encode(password),
+				'controller': packtpub_controller,
+			}
+			self.users.append(user)
+			self.__log("New user registered: " + email)
 			return 'registered as ' + email + '!<br><a href="/">back</a>'
 		else:
 			return 'Login with given credentials failed.'
@@ -52,34 +60,32 @@ class Root(object):
 
 	@cherrypy.expose
 	def claim(self):
-		return self.pull([False]) + "\n"
+		return self.pull() + "\n"
 
-	def pull(self, args):
-		global config
-		if args[0] == True: # rerun in 8h
-			self.timer = Timer(60 * 60 * 8, self.pull, [True])
+	def pull(self, rerun_pull = False):
+		if rerun_pull:
+			self.timer = Timer(8, self.pull, [True])
 			self.timer.start()
-		status = time.strftime('%H:%M:%S', time.localtime(time.time()))
-		if config == None:
+		status = ""
+		if len(self.users) == 0:
 			status += "\n\tNo user registered"
 		else:
-			if self.packtpub_controller.login(config['email'], base64.b64decode(config['password'])):
-				status += "\n\tLogin as " + config['email'] + " successful."
-			result = self.packtpub_controller.claim_free_ebook()
-			if result == True:
-				status += "\n\t\tNo new ebook to be claimed"
-			elif result == False:
-				status += "\n\t\tERROR@pull"
-			else:
-				status += "\n\t\tNew ebook claimed: " + result
-			if self.status != "":
-				self.status += "\n"
-		self.status += status 
+			for user in self.users:
+				if user['controller'].login(user['email'], base64.b64decode(user['password'])):
+					status += "\n\tLogin as " + user['email'] + " successful."
+				result = user['controller'].claim_free_ebook()
+				if result == True:
+					status += " - No new ebook to be claimed"
+				elif result == False:
+					status += " - ERROR@pull"
+				else:
+					status += " - New ebook claimed: " + result
+		self.__log(status)
 		return status
 
 if __name__ == "__main__":
 	r = Root()
-	r.pull([True])
+	r.pull(True)
 	cherrypy.config.update({
 		'server.socket_host': '0.0.0.0',
 		'server.socket_port': 8080,
