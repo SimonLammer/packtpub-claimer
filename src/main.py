@@ -53,6 +53,10 @@ class Root(object):
 			</html>"""
 
 	@cherrypy.expose
+	def registered(self):
+		return '\n'.join(user['email'] for user in self.users)
+
+	@cherrypy.expose
 	def register(self, email, password):
 		packtpub_controller = PacktpubController()
 		if packtpub_controller.login(email, password):
