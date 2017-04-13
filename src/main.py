@@ -53,6 +53,10 @@ class Root(object):
 			</html>"""
 
 	@cherrypy.expose
+	def registered(self):
+		return '\n'.join(user['email'] for user in self.users)
+
+	@cherrypy.expose
 	def register(self, email, password):
 		packtpub_controller = PacktpubController()
 		if packtpub_controller.login(email, password):
@@ -62,6 +66,17 @@ class Root(object):
 				'controller': packtpub_controller,
 			}
 			self.users.append(user)
+			is_new_user = True
+			users_file = open("users.txt", "r")
+			for username in users_file.readlines():
+				if username == user['email']:
+					is_new_user = False
+					break
+			users_file.close()
+			if is_new_user:
+				users_file = open("users.txt", "a")
+				users_file.write(user['email'])
+				users_file.close()
 			self.__log("New user registered: " + email)
 			return 'registered as ' + email + '!<br><a href="/">back</a>'
 		else:
