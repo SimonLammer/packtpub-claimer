@@ -36,7 +36,11 @@ class PacktpubController(object):
 
 	def get_last_ebook_name(self):
 		if self.__do_get('/account/my-ebooks'):
-			return self.tree.xpath('//div[@id = "product-account-list"]/div[1]//div[contains(@class, "title")]/text()')[0].strip()
+			books = self.tree.xpath('//div[@id = "product-account-list"]/div[1]//div[contains(@class, "title")]/text()')
+			if len(books) == 0:
+				return ""
+			else:
+				return books[0].strip()
 		else:
 			return False
 
