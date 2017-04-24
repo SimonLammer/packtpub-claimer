@@ -46,9 +46,10 @@ class Root(object):
 						<input type="password" name="password" placeholder="password" /><br/>
 						<input type="submit" value="Register" />
 					</form>
-					""" + self.status + """
 					<h1>Current time: """ + self.__format_time() + """</h1>
 					<h2>Time until next pull: """ + self.__format_time(self.next_pull_time - time.time()) + """</h2>
+					<h3>Status: </h3>
+					""" + self.status.replace('\n','<br />') + """
 				</body>
 			</html>"""
 
